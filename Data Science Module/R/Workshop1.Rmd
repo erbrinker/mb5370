@@ -256,6 +256,8 @@ ggplot(data = mpg)+
 #### 2.14 Plot Reconstruction Assignment
 
 ```{r}
+#`Coral.Data,.1995.2019.xlsx...R.Worthy` <- read.csv("C:/Users/eanbr/Desktop/JCU Masters/Semester 3/MB5370 Techniques in Marine Science 1/github/mb5370/Data Science Module/data/Coral Data, 1995-2019.xlsx - R-Worthy.csv")
+
 trueyear = as.character.Date(`Coral.Data,.1995.2019.xlsx...R.Worthy`$year)
 
 corals <- cbind(`Coral.Data,.1995.2019.xlsx...R.Worthy`,trueyear)
@@ -276,15 +278,17 @@ library(ggridges)
 
 
 ```{r}
-ggplot(corals, aes(x = area, y = trueyear, fill= trueyear))+
-  geom_density_ridges()+
-  scale_color_brewer(palette="Set1")+
+
+deconstructedplot <- ggplot(corals, aes(x = area, y = trueyear))+
+  geom_density_ridges(aes(fill=trueyear))+
   scale_x_continuous(limits = c(0,2000))+
   labs(x = "2D Surface Area (cm^2)",
        y = "Survey year")+
   theme_minimal()+
-  theme(legend.position = 'none') 
-  
+  theme(legend.position = 'none')+
+  geom_point(position=position_jitter(), shape=23,stroke=0, color='black', size=2.5, alpha=0.7, aes(fill=trueyear))#+scale_color_brewer(palette="Set1")
+
+deconstructedplot
 ```
 
 
