@@ -1,0 +1,208 @@
+---
+title: "Workshop 2"
+author: "Ean Brinker"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+## Workshop 2 -- Using ggplot2 for communication
+
+```{r}
+library(tidyverse)
+```
+
+
+#### 3.1 Labels
+Making coherent graphs requires coherent labels, which we add via the labs() function.
+```{r}
+ggplot(mpg, aes(displ, hwy))+
+  geom_point(aes(color=class)) +
+  geom_smooth(se = FALSE)+
+  labs(title = "Fuel efficiency generally decreases with engine size")
+```
+Inside labs(), you can also add subtitles and captions with identical arguments to title.
+```{r}
+ggplot(mpg, aes(displ, hwy))+
+  geom_point(aes(color=class)) +
+  geom_smooth(se = FALSE)+
+  labs(title = "Fuel efficiency generally decreases with engine size",
+       subtitle = "Two seaters (sports cars) are an exception because of their light weight",
+       caption = "Data from fueleconomy.gov")
+```
+You can also edit axes and legend titles.
+```{r}
+ggplot(mpg, aes(displ, hwy))+
+  geom_point(aes(color=class)) +
+  geom_smooth(se = FALSE)+
+  labs(
+    x = "Engine displacement (L)",
+    y = "Highway fuel economy (mpg)",
+    color = "Car type"
+  )
+```
+
+#### 3.2 Annotations
+Sometimes we want to add specific text to the plot itself, rather than to our captions. This is called annotating, and we use geom_text to do it. First, we're going to filter our data to make it more manageable. There are other functions, including nudge() that let you move your labels around.
+```{r}
+bestinclass <- mpg %>% 
+  group_by(class) %>% 
+  filter(row_number(desc(hwy)) == 1) # This creates a new dataframe that takes only the first (highest) value of highway fuel efficiency for each class of car.
+
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(color = class))+
+  geom_text(aes(label = model), data = bestinclass)
+
+```
+
+#### 3.3 Scales
+Changing the default scales can help readability.
+```{r}
+ggplot(mpg, aes(displ, hwy))+
+  geom_point(aes(color=class))
+
+# Versus:
+
+ggplot(mpg, aes(displ, hwy))+
+  geom_point(aes(color=class))+
+  scale_x_continuous(limits = c(0,20))+
+  scale_y_continuous(limits = c(0,75))+
+  scale_color_manual(values= c("green","red","limegreen","cyan","magenta","yellow","blue"))
+```
+
+#### 3.4 Axis ticks
+You can also change the axis scale ticks, or ignore labels altogether.
+```{r}
+ggplot(mpg, aes(displ, hwy))+
+  geom_point()+
+  scale_y_continuous(breaks = seq(15, 40, by = 5)) # This is a lazy way of writing out every number in sequences of 5 between 15 and 40.
+
+ggplot(mpg, aes(displ, hwy))+
+  geom_point()+
+  scale_x_continuous(labels = NULL)+
+  scale_y_continuous(labels = NULL)
+
+```
+
+#### 3.5 Legends and color schemes
+Changing legend position is an easy addition to your code.
+```{r}
+base <- ggplot(mpg, aes(displ, hwy))+
+  geom_point(aes(color=class))
+
+base + theme(legend.position = "left")
+base + theme(legend.position = "top")
+base + theme(legend.position = "right") #This is default
+base + theme(legend.position = "bottom")
+base + theme(legend.position = "none")
+
+```
+
+#### 3.6 Replacing a scale
+Swapping continuous position scales and color scales are pretty common. We can easily plot transformations in R.
+```{r}
+ggplot(diamonds, aes(carat,price))+
+  geom_bin2d()+
+  scale_x_log10()+
+  scale_y_log10()
+```
+Color scaling is also important.
+```{r}
+ggplot(mpg, aes(displ, hwy))+
+  geom_point(aes(color=drv))
+
+# Versus:
+
+ggplot(mpg, aes(displ, hwy))+
+  geom_point(aes(color=drv))+
+  scale_color_brewer(palette ="Set1")
+
+```
+You can also change shapes too, to make sure your chart is distinguishable in black and white.
+```{r}
+ggplot(mpg, aes(displ, hwy))+
+  geom_point(aes(color=drv, shape = drv))+
+  scale_color_brewer(palette ="Set1")
+
+```
+There's loads of ways to change color, and loads of packages. You can set them manually:
+```{r}
+presidential %>%
+  mutate(id = 33 + row_number()) %>%
+  ggplot(aes(start, id, colour = party)) +
+    geom_point() +
+    geom_segment(aes(xend = end, yend = id)) +
+    scale_colour_manual(values = c(Republican = "red", Democratic = "blue"))
+```
+Or by stealing them from packages like viridis, which has become very popular:
+```{r}
+#install.packages("viridis")
+#install.packages("hexbin")
+library(viridis)
+library(hexbin)
+
+df <- tibble( # note we're just making a fake dataset so we can plot it
+  x = rnorm(10000),
+  y = rnorm(10000)
+)
+ggplot(df, aes(x, y)) +
+  geom_hex() + # a new geom!
+  coord_fixed()
+
+ggplot(df, aes(x, y)) +
+  geom_hex() +
+  viridis::scale_fill_viridis() +
+  coord_fixed()
+```
+
+#### 3.7 Themes
+Finally, you can customize an entire theme for your plot. ggplot2 has eight default themes, but there's loads out there, including packages like ggthemes.
+```{r}
+ggplot(mpg, aes(displ, hwy))+
+  geom_point(aes(color=class))+
+  geom_smooth(se = FALSE)+
+  theme_bw()
+
+ggplot(mpg, aes(displ, hwy))+
+  geom_point(aes(color=class))+
+  geom_smooth(se = FALSE)+
+  theme_classic()
+
+ggplot(mpg, aes(displ, hwy))+
+  geom_point(aes(color=class))+
+  geom_smooth(se = FALSE)+
+  theme_dark()
+
+ggplot(mpg, aes(displ, hwy))+
+  geom_point(aes(color=class))+
+  geom_smooth(se = FALSE)+
+  theme_gray()
+
+ggplot(mpg, aes(displ, hwy))+
+  geom_point(aes(color=class))+
+  geom_smooth(se = FALSE)+
+  theme_light()
+
+
+```
+You can also create your own themes to standardize your plots with minimal coding. Here's one that Nick made to show the elements available for editing:
+```{r}
+theme(panel.border = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        legend.position="bottom",
+        legend.title=element_blank(),
+        legend.text=element_text(size=8),
+        panel.grid.major = element_blank(),
+        legend.key = element_blank(),
+        legend.background = element_blank(),
+        axis.text.y=element_text(colour="black"),
+        axis.text.x=element_text(colour="black"),
+        text=element_text(family="Arial")) 
+
+```
+
+
+
+
+
+

@@ -1,0 +1,292 @@
+---
+title: "Workshop 1 -- Dataviz in R"
+author: "Ean Brinker"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+## Workshop 1: Dataviz in R
+
+This workshop aims to teach basic data visualization skills in RStudio. We will mainly use ggplot2 and branch out into our own work later.
+
+```{r}
+# install.packages("tidyverse")  I already had tidyverse, but it's worth remembering the code.
+library(tidyverse)
+```
+
+#### 2.5 Obtain data
+
+```{r}
+mpg #This is an embedded dataset in R.
+```
+
+#### 2.6 Create a ggplot
+
+```{r}
+ggplot(data = mpg)+
+  geom_point(mapping = aes(x = displ, y = hwy))  # geom_point adds our data as points, creating a scatterplot based on your aesthetics and mapping arguments.
+```
+
+#### 2.7 Understanding the 'grammar of graphics'
+##### 2.7.1 Graphing template
+In every case, we call ggplot, hand it data, and then add a geometric function and a set of aesthetics.
+```{r}
+# ggplot(data = <DATA>) +
+  # <GEOM_FUNCTION>(mapping = aes(<MAPPINGS>))
+```
+##### 2.7.2 Aesthetics
+You can change loads of aesthetics. Let's change point color by class.
+```{r}
+ggplot(data = mpg) +
+  geom_point(mapping = aes(x = displ, y = hwy, color = class)) #Using these arguments for color also applies a default legend to your chart.
+```
+You can also change things like point size by specified variables. It's recommended to use continuous variables for point size, like size.
+```{r}
+ggplot(data=mpg)+
+  geom_point(mapping = aes(x = displ, y = hwy, size = class))
+
+```
+We can change point transparency with the alpha aesthetic. This can be a scalar or by class.
+```{r}
+ggplot(data=mpg)+
+  geom_point(mapping = aes(x = displ, y = hwy, alpha = class))
+```
+We can change shape by class as well.
+```{r}
+ggplot(data=mpg)+
+  geom_point(mapping = aes(x = displ, y = hwy, shape = class))
+```
+We can set manual properties as well--let's make our points all lime green.
+```{r}
+ggplot(data=mpg)+
+  geom_point(mapping = aes(x = displ, y = hwy), color = 'lime green')
+```
+We can also map our aesthetics to inequalities or small functions. Let's see it.
+```{r}
+ggplot(data=mpg)+
+  geom_point(mapping = aes(x = displ, y = hwy, color = displ < 5))
+```
+
+#### 2.9 Facet and panel plots
+Sometimes we need to split our plots up by a single discrete variable, like class or species. In ggplot, we do this with facet_wrap().
+```{r}
+ggplot(data=mpg)+
+  geom_point(mapping = aes(x = displ, y = hwy))+
+  facet_wrap(~ class, nrow=2) # The tilde sign (~) means 'by' in R syntax-- we are faceting this plot 'by' class, and displaying our panels in two rows. We can also specify the number of columns.
+```
+We can also facet by two variables at once. This uses facet_grid, with two variables separated by a tilde (~).
+```{r}
+ggplot(data=mpg)+
+  geom_point(mapping = aes(x = displ, y = hwy))+
+  facet_grid(drv ~ cyl)
+#This grid facets columns by the number of cylinders in the engine, and rows by the drive train style (4WD, front, or rear wheel drive).
+```
+You can limit the faceting in a single direction (rows or columns) by replacing the variable with a period (.).
+```{r}
+ggplot(data=mpg)+
+  geom_point(mapping = aes(x = displ, y = hwy))+
+  facet_grid(. ~ cyl)
+```
+
+#### 2.10 Fitting simple lines
+Oftentimes in science, we like to fit simple lines to plots. Sometimes, they're a unity line for ecological modeling, or maybe a linear regression or best fit line. We can use other geometric functions to do that.
+```{r}
+ggplot(data=mpg)+
+  geom_smooth(mapping = aes(x = displ, y = hwy))
+# geom_smooth has several default arguments, including the method and formula used to fit the line. It also defaults to showing an error cloud around it at 95% confidence.
+```
+Just like geom_point, we can edit the aesthetics to modify our charts. Let's change our line type and color based on drive train.
+```{r}
+ggplot(data=mpg)+
+  geom_smooth(mapping = aes(x = displ, y = hwy, linetype = drv, color = drv))
+```
+We can add multiple geometric functions to the same plot, too.
+```{r}
+ggplot(data=mpg)+
+  geom_smooth(mapping = aes(x = displ, y = hwy, linetype = drv, color = drv))+
+  geom_point(mapping = aes(x = displ, y = hwy, color = drv))
+```
+We can use the group aesthetic to draw multiple objects. This is just the splitting function that happens when you change linetype or color or another aesthetic to apply to a categorical variable.
+```{r}
+ggplot(data=mpg)+
+  geom_smooth(mapping = aes(x = displ, y = hwy, group = drv))
+```
+Let's go back to addimng multiple geoms. If we do it as above, we have to edit everything twice, leaving plenty of room for errors. Fun fact: we can be very very lazy here using mapping.
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy))+
+  geom_point()+
+  geom_smooth()
+```
+We can also use mappings for each section!
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy))+
+  geom_point(mapping = aes(color = drv))+
+  geom_smooth()
+```
+If you want, you can filter data down to each layer in your ggplot.
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy))+
+  geom_point(mapping = aes(color = drv))+
+  geom_smooth(data = filter(mpg, class == 'subcompact'), se = FALSE) # We will return to the filter() command and why it is useful later.
+```
+
+##### Exercises:
+```{r}
+# Draw a line chart.
+ggplot(data=mpg)+
+  geom_line(mapping = aes(x=displ, y=hwy)) #Please never use a line chart for this.
+
+# Draw a boxplot.
+ggplot(data=mpg)+
+  geom_boxplot(mapping = aes(x = class, y = hwy)) #This is fine.
+
+# Draw a histogram.
+ggplot(data=mpg)+
+  geom_histogram(mapping = aes(x=displ),binwidth=.5)
+
+# Are these plots identical?
+
+#Yes. yes they are.
+
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_point() + 
+  geom_smooth()
+
+ggplot() + 
+  geom_point(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_smooth(data = mpg, mapping = aes(x = displ, y = hwy))
+```
+
+#### Transformations and Stats
+In this section, we're swapping to another data set used to support the teaching of these processes. The diamonds dataset has the price, carat, color, clarity, and cut of roughly 54,000 diamonds.
+
+```{r}
+ggplot(data = diamonds)+
+  geom_bar(mapping = aes(x = cut)) #Fun fact: geom_bar will give you a count of your diamonds even if the dataset doesn't include a count value.
+```
+Rather than relying on geom_bar to count is for us, we can use the stat_count function. This will provide the same graph.
+```{r}
+ggplot(data = diamonds)+
+  stat_count(mapping = aes(x = cut))
+```
+##### 2.11.2 Overriding defaults in ggplot2
+The default stat (a count) can be changed to display differently. Here, we change it to 'identity'. We'll need a basic dataset first--a tribble is basically a dataframe, fun fact.
+```{r}
+demo <- tribble(
+  ~cut, ~freq,
+  'Fair', 1610,
+  'Good', 4906,
+  'Very Good', 12082,
+  'Premium', 13791,
+  'Ideal', 21551
+)
+demo
+
+ggplot(data=demo)+
+  geom_bar(mapping = aes(x = cut, y = freq), stat = 'identity') #This chart is still identical to before--I've used identity before to display a bar chart with the value of average length, rather than a count value.
+```
+We can also override default mappings. Let's map the proportion of diamonds for each group, not count. If you forget to set the group to 1, it simply shows the proportion of each cut that each cut contains--in short, every bar is equal to 1.
+```{r}
+ggplot(data = diamonds)+
+  geom_bar(mapping = aes(x = cut, y= stat(prop), group = 1))
+```
+
+##### 2.11.3 Plotting statistical details
+We can also show our data transformations on the plot, which is good practice to be transparent with data limitations. The stat_summary() function can display basic info on our data sets.
+```{r}
+ggplot(data = diamonds)+
+  stat_summary(
+    mapping = aes(x = cut, y = depth),
+    fun.min = min,
+    fun.max = max,
+    fun = median
+  )
+```
+
+#### Positional Adjustments
+We can use color or fill to adjust the aspects of bar colors.
+```{r}
+ggplot(data = diamonds)+ 
+  geom_bar(mapping = aes(x = cut, color = cut)) # Color changes the color of the border only.
+
+ggplot(data = diamonds)+ 
+  geom_bar(mapping = aes(x = cut, fill = cut))
+```
+If we do aesthetics by a secondary category, like clarity, ggplot does it behind the scenes with a position argument.
+```{r}
+ggplot(data = diamonds)+ 
+  geom_bar(mapping = aes(x = cut, fill = clarity))
+```
+We can alter these position arguments in three main ways: identity (shows raw data), fill (changes heights), and dodge (forces ggplot to not stack items on top of each other).
+```{r}
+ggplot(data = diamonds, mapping = aes(x = cut, fill = clarity))+ 
+  geom_bar(alpha = 1/5, position = "identity") # Remember the alpha argument changes transparency. The identity argument places each object exactly where it falls in the context of the graph--this is very important for scatterplots, but usually bad for bar plots.
+
+ggplot(data = diamonds, mapping = aes(x = cut, color = clarity))+ 
+  geom_bar(fill = NA, position = "identity")
+```
+The fill position makes each set of bars the same height.
+```{r}
+ggplot(data = diamonds, mapping = aes(x = cut, fill = clarity))+ 
+  geom_bar(position = "fill")
+```
+Dodge places things side by side.
+```{r}
+ggplot(data = diamonds, mapping = aes(x = cut, fill = clarity))+ 
+  geom_bar(position = "dodge")
+```
+We can also use jitter, which offsets overlapping points to make readability better. Useful on scatterplots
+```{r}
+ggplot(data = mpg)+
+  geom_point(mapping = aes(x = displ, y = hwy), position = "jitter")
+```
+
+#### 2.13 Updated Grammar and Template
+
+```{r}
+#ggplot(data = <DATA>) + 
+#  <GEOM_FUNCTION>(
+#     mapping = aes(<MAPPINGS>),
+#     stat = <STAT>, 
+#     position = <POSITION>
+#  ) +
+#  <FACET_FUNCTION>
+```
+
+#### 2.14 Plot Reconstruction Assignment
+
+```{r}
+trueyear = as.character.Date(`Coral.Data,.1995.2019.xlsx...R.Worthy`$year)
+
+corals <- cbind(`Coral.Data,.1995.2019.xlsx...R.Worthy`,trueyear)
+
+ggplot(data=corals)+
+  geom_freqpoly(aes(area, color = trueyear, linetype = trueyear),show.legend = FALSE, binwidth = 50)+
+  scale_x_continuous(limits = c(0,2000))+
+  labs(x = "2D Surface Area (cm^2)",
+       y = "Frequency") +
+  scale_color_discrete(name = "Survey year")
+
+```
+
+```{r}
+#install.packages("ggridges")
+library(ggridges)
+```
+
+
+```{r}
+ggplot(corals, aes(x = area, y = trueyear, fill= trueyear))+
+  geom_density_ridges()+
+  scale_color_brewer(palette="Set1")+
+  scale_x_continuous(limits = c(0,2000))+
+  labs(x = "2D Surface Area (cm^2)",
+       y = "Survey year")+
+  theme_minimal()+
+  theme(legend.position = 'none') 
+  
+```
+
+
+
+
