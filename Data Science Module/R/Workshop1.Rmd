@@ -274,6 +274,9 @@ ggplot(data=corals)+
 ```{r}
 #install.packages("ggridges")
 library(ggridges)
+
+#install.packages("ggtext")
+library(ggtext)
 ```
 
 
@@ -283,10 +286,12 @@ deconstructedplot <- ggplot(corals, aes(x = area, y = trueyear))+
   geom_density_ridges(aes(fill=trueyear))+
   scale_x_continuous(limits = c(0,2000))+
   labs(x = "2D Surface Area (cm^2)",
-       y = "Survey year")+
+       y = "Survey year",
+       title="Size distribution of *Pocillopora* spp. colonies in Devil's Crown, Galapagos Islands",
+       subtitle = "Surface area by count and survey year")+
   theme_minimal()+
-  theme(legend.position = 'none')+
-  geom_point(position=position_jitter(), shape=23,stroke=0, color='black', size=2.5, alpha=0.7, aes(fill=trueyear))#+scale_color_brewer(palette="Set1")
+  theme(legend.position = 'none', plot.title = ggtext::element_markdown())+
+  geom_point(position=position_jitter(), shape=23,stroke=0, color='black', size=2.5, alpha=0.7, aes(fill=trueyear))#+scale_color_brewer(palette="Set2")
 
 deconstructedplot
 ```
