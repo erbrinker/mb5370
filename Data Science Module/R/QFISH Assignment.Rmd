@@ -1,0 +1,28 @@
+---
+title: "QFISH Document"
+author: "Ean Brinker"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+## QFISH Database Assignment
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(ggtext)
+```
+
+For this assignment, I have selected the Otter Trawl fisheries database, looking at the number of licenses, days, and tonnes of catch by species and region.
+
+```{r}
+QFISH.otter.trawl <- read.csv("C:/Users/eanbr/Desktop/JCU Masters/Semester 3/MB5370 Techniques in Marine Science 1/github/mb5370/Data Science Module/data/QFISH.otter.trawl.csv")
+
+qfish <- as_tibble(QFISH.otter.trawl)
+
+qfish # As the default viewing width of tibbles is five columns, we do not need to adjust the viewing width for this dataset.
+```
+
+
+
+
