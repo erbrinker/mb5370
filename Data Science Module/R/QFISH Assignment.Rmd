@@ -16,12 +16,97 @@ library(ggtext)
 For this assignment, I have selected the Otter Trawl fisheries database, looking at the number of licenses, days, and tonnes of catch by species and region.
 
 ```{r}
-QFISH.otter.trawl <- read.csv("C:/Users/eanbr/Desktop/JCU Masters/Semester 3/MB5370 Techniques in Marine Science 1/github/mb5370/Data Science Module/data/QFISH.otter.trawl.csv")
+library(readr)
+
+QFISH.otter.trawl <- read_csv("C:/Users/eanbr/Desktop/JCU Masters/Semester 3/MB5370 Techniques in Marine Science 1/github/mb5370/Data Science Module/data/QFISH.otter.trawl.csv", col_names = TRUE, na = "N/A", col_types = cols(Species = col_character(),
+  Region = col_character(),
+  Licences = col_number(),
+  Days = col_number(),
+  Tonnes = col_number()))  
+
+# After running the original read.csv file, I discovered lots of missing numeric data. I tried re-running using the readr package to specify column names instead of a mutate, but I still ran into an issue where the Tonnes column was limited to certain data ranges. Under the column type integer, the column only allowed data from 0-200. Under the double type, the limit increased to 1000, but was still limited. Only the number col_type allowed the data to expand appropriately. I still want it as a tibble, though.
 
 qfish <- as_tibble(QFISH.otter.trawl)
 
-qfish # As the default viewing width of tibbles is five columns, we do not need to adjust the viewing width for this dataset.
+qfish
 ```
+
+
+LEGACY CODE:
+```{r}
+# qfish <- as_tibble(QFISH.otter.trawl)
+
+# qfish # As the default viewing width of tibbles is five columns, we do not need to adjust the viewing width for this dataset. However, several of our columns are characters, not integers.
+
+# mutate <- qfish %>% mutate_at('Licences', as.numeric)
+# mutate2 <- mutate %>% mutate_at('Days', as.numeric)
+# prettyfish <- mutate2 %>% mutate_at('Tonnes', as.numeric)
+
+# prettyfish
+# After these mutations, our dataset should be ready to use.
+  
+```
+
+
+Now let's look at some data.
+```{r}
+ggplot(data = qfish)+
+  geom_col(aes(x = Species, y = Tonnes))
+
+# Okay, so we have a little too  many species to look at that.
+
+TbyR <- ggplot(data = qfish)+
+  geom_col(aes(x = Region, y = Tonnes, fill = Region))
+TbyR
+# Could be something there.
+
+CatchRate <- ggplot(qfish) +
+  geom_col(aes(x = Region, y = (Tonnes/Days), fill = Region))
+CatchRate
+
+```
+Current plan: plot a map of Australia with the regions on it that has the top species (by tonnage) for that fishery region mapped. Bonus: the dots for each species are sized by tonnage and colored by species. Bonus Bonus: create a second chart, nearly identical but from the dataset that has the highest catch rate (tonnes per day). Bonus bonus bonus: Do top three, instead of largest.
+
+We need:
+- A map of Australia
+- Coordinate data for the regions
+- A filtered database containing only the largest per region
+
+Let's begin.
+
+```{r}
+library(dplyr)
+
+realfish <- filter(qfish, Species != "Unknown", Species != "Unknown Total", Species != "Grand Total") # Our original dataset has some unknowns that may take over our real data. Let's use only species we have an ID for.
+
+top3 <- slice_max(realfish, order_by = Tonnes, by = Region, n=3) # It was significantly easier than expected to take the top three values, grouped by region and ordered by tonnes. It does include some regions we do not like, however--we don't want the total for just the East Coast or GBR Marine Park for this analysis.
+
+ref3 <- filter(top3, Region != "East coast", Region != "Great barrier reef marine park" )
+
+# Now, we are going to assign a Latitude and Longitude value for each region. Note that these values are based on visual estimates of coastal areas based on the Mapstone Categories and is for visualization purposes only.
+latlong <- tribble(
+  ~Region, ~Latitude, ~Longitude,
+  'Mapstone - Cairns', 146.26533, -16.79403,
+  'Mapstone - Capricorn bunker', 151.95576, -23.45006,
+  'Mapstone - Far northern', 145.01776, -14.15892,
+  'Mapstone - Mackay', 150.54438, -20.72121,
+  'Mapstone - Sub tropical', 154.26726, -24.82636,
+  'Mapstone - The swains', 152.47458, -21.98121,
+  'Mapstone - Townsville', 147.70691, -18.81202,
+  '', 142.7983, -20.80399,
+  'Mapstone - Eastern torres strait', 143.39179, -10.68325,
+  'Mapstone - Gulf of carpentaria', 139.17597, -14.85047
+)
+
+sfref3 <- left_join(ref3,latlong, by = "Region")
+
+sfref3 # Now we have our data that can be spatially referenced on a map of Australia.
+```
+
+#### Mapping our data
+
+
+
 
 
 
