@@ -98,12 +98,38 @@ latlong <- tribble(
   'Mapstone - Gulf of carpentaria', 139.17597, -14.85047
 )
 
-sfref3 <- left_join(ref3,latlong, by = "Region")
+llref3 <- left_join(ref3,latlong, by = "Region")
 
-sfref3 # Now we have our data that can be spatially referenced on a map of Australia.
+llref3 # Now we have our data that can be spatially referenced on a map of Australia.
 ```
 
 #### Mapping our data
+
+Loading in our mapping packages:
+```{r}
+library(sf)
+library(terra)
+library(tmap)
+
+```
+
+Converting our data into spatially-referenced data:
+```{r}
+
+sfref3 <- st_as_sf(llref3, coords = c("Latitude", "Longitude"), crs=4326) # Using the WGS 84 coordinate reference system.
+
+```
+
+Beginning our basemap building:
+```{r}
+aus <- st_read("Data Science Module/data/data-for-course/spatial-data/Aussie/Aussie.shp")
+
+aus
+
+shelf <- st_read("Data Science Module/data/data-for-course/spatial-data/aus_shelf/aus_shelf.shp")
+
+shelf
+```
 
 
 
