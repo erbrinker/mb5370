@@ -11,13 +11,14 @@ output: html_document
 library(tidyverse)
 library(ggplot2)
 library(ggtext)
+
+library(dplyr)
+library(readr)
 ```
 
 For this assignment, I have selected the Otter Trawl fisheries database, looking at the number of licenses, days, and tonnes of catch by species and region.
 
 ```{r}
-library(readr)
-
 QFISH.otter.trawl <- read_csv("C:/Users/eanbr/Desktop/JCU Masters/Semester 3/MB5370 Techniques in Marine Science 1/github/mb5370/Data Science Module/data/QFISH.otter.trawl.csv", col_names = TRUE, na = "N/A", col_types = cols(Species = col_character(),
   Region = col_character(),
   Licences = col_number(),
@@ -75,8 +76,6 @@ We need:
 Let's begin.
 
 ```{r}
-library(dplyr)
-
 realfish <- filter(qfish, Species != "Unknown", Species != "Unknown Total", Species != "Grand Total") # Our original dataset has some unknowns that may take over our real data. Let's use only species we have an ID for.
 
 top3 <- slice_max(realfish, order_by = Tonnes, by = Region, n=3) # It was significantly easier than expected to take the top three values, grouped by region and ordered by tonnes. It does include some regions we do not like, however--we don't want the total for just the East Coast or GBR Marine Park for this analysis.
@@ -110,7 +109,6 @@ Loading in our mapping packages:
 library(sf)
 library(terra)
 library(tmap)
-
 ```
 
 Converting our data into spatially-referenced data:
@@ -120,17 +118,40 @@ sfref3 <- st_as_sf(llref3, coords = c("Latitude", "Longitude"), crs=4326) # Usin
 
 ```
 
-Beginning our basemap building:
+Accessing our shapefiles:
 ```{r}
-aus <- st_read("Data Science Module/data/data-for-course/spatial-data/Aussie/Aussie.shp")
+aus <- st_read("C:/Users/eanbr/Desktop/JCU Masters/Semester 3/MB5370 Techniques in Marine Science 1/github/mb5370/Data Science Module/data/data-for-course/spatial-data/Aussie/Aussie.shp")
+
+# Notes: something about the st_read function completely breaks the relative file paths we were using originally after the first time you save and close R. So far, the only solution I have found is to use the explicit file path.
+
+# Both Aus and Shelf data are downloaded from this link: https://drive.google.com/file/d/1cXeH25aUH-YX5stDRdMdfEVCOF0r_gzB/view
 
 aus
 
-shelf <- st_read("Data Science Module/data/data-for-course/spatial-data/aus_shelf/aus_shelf.shp")
+shelf <- st_read("C:/Users/eanbr/Desktop/JCU Masters/Semester 3/MB5370 Techniques in Marine Science 1/github/mb5370/Data Science Module/data/data-for-course/spatial-data/aus_shelf/aus_shelf.shp")
 
 shelf
 ```
 
+Building our map:
+```{r}
+eastcoast = tribble(
+  ~Latitude, ~Longitude,
+  164.57611, -27.15727,
+  137.52631, -9.16756
+)
+
+sfeastcoast <- st_as_sf(eastcoast, coords = c("Latitude", "Longitude"), crs = 4326)
+
+tm_shape(shelf, bbox = sfeastcoast)+
+  tm_polygons(border.alpha = 1, alpha = 0)+
+  tm_shape(aus)+
+  tm_polygons(border.alpha = 1, alpha = 0)+
+  tm_shape(sfref3)+
+  tm_bubbles(size = "Tonnes", col = "Species", jitter = 0.5, scale = 4, labels = NULL)
+
+
+```
 
 
 
