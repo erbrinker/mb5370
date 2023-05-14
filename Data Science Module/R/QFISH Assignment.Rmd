@@ -143,17 +143,89 @@ eastcoast = tribble(
 
 sfeastcoast <- st_as_sf(eastcoast, coords = c("Latitude", "Longitude"), crs = 4326)
 
-tm_shape(shelf, bbox = sfeastcoast)+
+draftmap1 <- tm_shape(shelf, bbox = sfeastcoast)+
   tm_polygons(border.alpha = 1, alpha = 0)+
   tm_shape(aus)+
   tm_polygons(border.alpha = 1, alpha = 0)+
   tm_shape(sfref3)+
-  tm_bubbles(size = "Tonnes", col = "Species", jitter = 0.5, scale = 4, labels = NULL)
+  tm_bubbles(size = "Tonnes", col = "Species", jitter = 0.5, scale = 4, labels = NULL)+
+  tm_text("Region", size = 1/2, xmod = 2, ymod = 1)
 
+draftmap1
 
 ```
 
+Looking at the resultant draft map, I see a few issues. First, without a way to cluster my data points regularly (without adding further lat-long complexity into my dataset), my largest data points are problematically overlapping. Second, several of my data values are critically undersized, particularly in the Eastern Torres Strait and Gulf of Carpentaria. The original intent to include the largest fisheries in all of Queensland was a nice touch, but poorly implemented. Let's re-filter to just the East Coast areas.
 
+```{r}
+sfrefined <- filter(sfref3, Region != "Mapstone - Gulf of carpentaria", Region != "Mapstone - Eastern torres strait", Region != "")
+
+# Let's re-map with newly redefined data. I will also resize our bounding box.
+
+gbrbox = tribble(
+  ~Latitude, ~Longitude,
+  164.57611, -27.15727,
+  142.52631, -9.16756
+)
+
+sfgbrbox <- st_as_sf(gbrbox, coords = c("Latitude", "Longitude"), crs = 4326)
+
+draftmap2 <- tm_shape(shelf, bbox = sfgbrbox)+
+  tm_polygons(border.alpha = 1, alpha = 0)+
+  tm_shape(aus)+
+  tm_polygons(border.alpha = 1, alpha = 0)+
+  tm_shape(sfrefined)+
+  tm_bubbles(size = "Tonnes", col = "Species", xmod = c(0,.9,1.8), scale = 4, labels = NULL, )+
+  tm_text("Region", size = 1, xmod = 2, ymod = 1)
+
+draftmap2
+
+```
+ That is looking great--final edits to come.
+ 
+```{r}
+
+# I want to redefine my bounding box to show more of Australia and less of the open ocean.
+
+ausbox = tribble(
+  ~Latitude, ~Longitude,
+  158.57611, -27.15727,
+  136.52631, -10.16756
+)
+
+sfausbox <- st_as_sf(ausbox, coords = c("Latitude", "Longitude"), crs = 4326)
+
+# Let's create a better label vector and join it to our data.
+reglabs <- tribble(
+  ~Region, ~Label,
+  'Mapstone - Cairns',"Cairns", 
+  'Mapstone - Capricorn bunker',"Capricorn Bunker Group", 
+  'Mapstone - Far northern',"Far Northern", 
+  'Mapstone - Mackay',"Mackay", 
+  'Mapstone - Sub tropical', "Sub-Tropical", 
+  'Mapstone - The swains', "The Swains", 
+  'Mapstone - Townsville',"Townsville")
+
+sfrefined2 <- left_join(sfrefined,reglabs, by = 'Region')
+
+
+draftmap3 <- tm_shape(shelf, bbox = sfausbox)+
+  tm_polygons(border.alpha = 1, alpha = 0.5, col="skyblue")+
+  tm_shape(aus)+
+  tm_polygons(border.alpha = 1, alpha = 0.7, col = "tan")+
+  tm_shape(sfrefined2)+
+  tm_bubbles(size = "Tonnes", col = "Species", xmod = c(0,.9,1.8), scale = 4, labels = NULL)+
+  tm_text("Label", size = 1, xmod = 2, ymod = 1, shadow = TRUE)+
+  tm_layout(main.title = "Largest Fisheries by Species for Queensland Otter Trawl, 1990-2022", main.title.position = "center", legend.position = c("left", "bottom"), legend.frame = TRUE, legend.bg.color = "white", bg.color = "gray96", frame.double.line = TRUE, frame.lwd = 1, fontfamily = "serif", fontface = "bold")
+  
+  # +
+#  tm_basemap("Stamen.TerrainBackground")+
+#  tmap_mode("view")
+
+draftmap3
+
+```
+ 
 
 
 
