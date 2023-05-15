@@ -16,7 +16,7 @@ library(dplyr)
 library(readr)
 ```
 
-For this assignment, I have selected the Otter Trawl fisheries database, looking at the number of licenses, days, and tonnes of catch by species and region.
+For this assignment, I have selected the Otter Trawl fisheries database, looking at the number of licenses, days, and tonnes of catch by species and region. This dataset spans from subtropical Queensland through the Torres Strait and into the Gulf of Carpentaria, and runs from 1990-present.
 
 ```{r}
 QFISH.otter.trawl <- read_csv("C:/Users/eanbr/Desktop/JCU Masters/Semester 3/MB5370 Techniques in Marine Science 1/github/mb5370/Data Science Module/data/QFISH.otter.trawl.csv", col_names = TRUE, na = "N/A", col_types = cols(Species = col_character(),
@@ -30,22 +30,6 @@ QFISH.otter.trawl <- read_csv("C:/Users/eanbr/Desktop/JCU Masters/Semester 3/MB5
 qfish <- as_tibble(QFISH.otter.trawl)
 
 qfish
-```
-
-
-LEGACY CODE:
-```{r}
-# qfish <- as_tibble(QFISH.otter.trawl)
-
-# qfish # As the default viewing width of tibbles is five columns, we do not need to adjust the viewing width for this dataset. However, several of our columns are characters, not integers.
-
-# mutate <- qfish %>% mutate_at('Licences', as.numeric)
-# mutate2 <- mutate %>% mutate_at('Days', as.numeric)
-# prettyfish <- mutate2 %>% mutate_at('Tonnes', as.numeric)
-
-# prettyfish
-# After these mutations, our dataset should be ready to use.
-  
 ```
 
 
@@ -66,11 +50,15 @@ CatchRate <- ggplot(qfish) +
 CatchRate
 
 ```
+
 Current plan: plot a map of Australia with the regions on it that has the top species (by tonnage) for that fishery region mapped. Bonus: the dots for each species are sized by tonnage and colored by species. Bonus Bonus: create a second chart, nearly identical but from the dataset that has the highest catch rate (tonnes per day). Bonus bonus bonus: Do top three, instead of largest.
 
 We need:
+
 - A map of Australia
+
 - Coordinate data for the regions
+
 - A filtered database containing only the largest per region
 
 Let's begin.
@@ -82,7 +70,7 @@ top3 <- slice_max(realfish, order_by = Tonnes, by = Region, n=3) # It was signif
 
 ref3 <- filter(top3, Region != "East coast", Region != "Great barrier reef marine park" )
 
-# Now, we are going to assign a Latitude and Longitude value for each region. Note that these values are based on visual estimates of coastal areas based on the Mapstone Categories and is for visualization purposes only.
+# Now, we are going to assign a Latitude and Longitude value for each region. Note that these values are based on visual estimates of coastal areas based on the Mapstone Categories and is for visualization purposes only. I derived these values from the coordinate function on Google Earth.
 latlong <- tribble(
   ~Region, ~Latitude, ~Longitude,
   'Mapstone - Cairns', 146.26533, -16.79403,
@@ -110,13 +98,16 @@ library(sf)
 library(terra)
 library(tmap)
 ```
+These packages are commonly used for creating spatial maps in R. Terra provides us with a number of useful datasets and imagery, while sf allows for conversion to spatial data and tmap is our base mapping tool. In order to use these mapping features, we need to do some conversions.
 
 Converting our data into spatially-referenced data:
 ```{r}
 
-sfref3 <- st_as_sf(llref3, coords = c("Latitude", "Longitude"), crs=4326) # Using the WGS 84 coordinate reference system.
+sfref3 <- st_as_sf(llref3, coords = c("Latitude", "Longitude"), crs=4326) # Using the WGS 84 coordinate reference system. WGS 84 is one of the most common reference systems for mapping data.
 
 ```
+
+The basis of our map plot relies on simple coastline and shelf polygons of the coast of Australia, rather than a detailed and distracting interactive map. This requires shapefiles that include those polygons--thankfully, we accessed those shapes in class.
 
 Accessing our shapefiles:
 ```{r}
@@ -133,14 +124,18 @@ shelf <- st_read("C:/Users/eanbr/Desktop/JCU Masters/Semester 3/MB5370 Technique
 shelf
 ```
 
+Once we have our shapefiles, we can begin using tmap. The tm_shape function acts much like a ggplot, where additional lines of code are added on in layers to our map. We do need to set the size of our chart, however, as it will default to our data size. Originally, that sounds useful, but our data includes a simple polygon of the entiretey of Australia. We just want the east coast of Queensland.
+
 Building our map:
 ```{r}
-eastcoast = tribble(
+# Setting our boundary box:
+eastcoast = tribble(   
   ~Latitude, ~Longitude,
   164.57611, -27.15727,
   137.52631, -9.16756
 )
 
+# Converting to spatially referenced data:
 sfeastcoast <- st_as_sf(eastcoast, coords = c("Latitude", "Longitude"), crs = 4326)
 
 draftmap1 <- tm_shape(shelf, bbox = sfeastcoast)+
@@ -155,9 +150,11 @@ draftmap1
 
 ```
 
-Looking at the resultant draft map, I see a few issues. First, without a way to cluster my data points regularly (without adding further lat-long complexity into my dataset), my largest data points are problematically overlapping. Second, several of my data values are critically undersized, particularly in the Eastern Torres Strait and Gulf of Carpentaria. The original intent to include the largest fisheries in all of Queensland was a nice touch, but poorly implemented. Let's re-filter to just the East Coast areas.
+Looking at the resultant draft map, I see a few issues. First, without a way to cluster my data points regularly (without adding further lat-long complexity into my dataset), my largest data points are problematically overlapping. Second, several of my data values are critically undersized, particularly in the Eastern Torres Strait and Gulf of Carpentaria. The original intent to include the largest fisheries in all of Queensland was a nice touch, but poorly implemented. Let's re-filter to just the East Coast areas, ignoring our overall totals, the Torres Strait, and the Gulf.
 
 ```{r}
+
+# Filtering out the unusable data:
 sfrefined <- filter(sfref3, Region != "Mapstone - Gulf of carpentaria", Region != "Mapstone - Eastern torres strait", Region != "")
 
 # Let's re-map with newly redefined data. I will also resize our bounding box.
@@ -168,8 +165,10 @@ gbrbox = tribble(
   142.52631, -9.16756
 )
 
+# Converting our new east-coast/gbr bounding box:
 sfgbrbox <- st_as_sf(gbrbox, coords = c("Latitude", "Longitude"), crs = 4326)
 
+# Second draft of our map:
 draftmap2 <- tm_shape(shelf, bbox = sfgbrbox)+
   tm_polygons(border.alpha = 1, alpha = 0)+
   tm_shape(aus)+
@@ -181,11 +180,12 @@ draftmap2 <- tm_shape(shelf, bbox = sfgbrbox)+
 draftmap2
 
 ```
- That is looking great--final edits to come.
+ 
+ That is looking great--final edits to come. I want to move my legend over onto the mainland so we can see more of QLD and less ocean. Additionally, my map is missing some key design elements, like a title.
  
 ```{r}
 
-# I want to redefine my bounding box to show more of Australia and less of the open ocean.
+# Redefining my bounding box to show more of Australia and less of the open ocean:
 
 ausbox = tribble(
   ~Latitude, ~Longitude,
@@ -195,7 +195,7 @@ ausbox = tribble(
 
 sfausbox <- st_as_sf(ausbox, coords = c("Latitude", "Longitude"), crs = 4326)
 
-# Let's create a better label vector and join it to our data.
+# Let's create a better label vector and join it to our data. Our current regions are messy:
 reglabs <- tribble(
   ~Region, ~Label,
   'Mapstone - Cairns',"Cairns", 
@@ -209,6 +209,7 @@ reglabs <- tribble(
 sfrefined2 <- left_join(sfrefined,reglabs, by = 'Region')
 
 
+# Returning to our map:
 draftmap3 <- tm_shape(shelf, bbox = sfausbox)+
   tm_polygons(border.alpha = 1, alpha = 0.5, col="skyblue")+
   tm_shape(aus)+
@@ -216,17 +217,33 @@ draftmap3 <- tm_shape(shelf, bbox = sfausbox)+
   tm_shape(sfrefined2)+
   tm_bubbles(size = "Tonnes", col = "Species", xmod = c(0,.9,1.8), scale = 4, labels = NULL)+
   tm_text("Label", size = 1, xmod = 2, ymod = 1, shadow = TRUE)+
-  tm_layout(main.title = "Largest Fisheries by Species for Queensland Otter Trawl, 1990-2022", main.title.position = "center", legend.position = c("left", "bottom"), legend.frame = TRUE, legend.bg.color = "white", bg.color = "gray96", frame.double.line = TRUE, frame.lwd = 1, fontfamily = "serif", fontface = "bold")
-  
-  # +
-#  tm_basemap("Stamen.TerrainBackground")+
-#  tmap_mode("view")
+  tm_layout(main.title = "Largest Fisheries by Species for Queensland Otter Trawl, 1990-2022", main.title.position = "center", legend.position = c("left", "bottom"), legend.frame = TRUE, legend.bg.color = "white", bg.color = "gray96", frame.double.line = TRUE, frame.lwd = 1, fontfamily = "serif", fontface = "bold", main.title.size = 1)
 
-draftmap3
+draftmap3 # Looks great!
 
 ```
  
+With those final edits, our plot is complete. We can see the largest fisheries by region, the species that compose them, and where along the coast those fisheries disappear. In the north, endeavour prawns and tiger prawns dominate the fisheries, but south of Townsville, Eastern king prawns take their place. The standard king prawns are caught up and down the coast, similar to Moreton Bay bugs. This chart is a summation of total catch, and may not reflect the year-to-year variations in harvest.
 
 
+
+
+
+
+
+LEGACY CODE:
+```{r}
+# qfish <- as_tibble(QFISH.otter.trawl)
+
+# qfish # As the default viewing width of tibbles is five columns, we do not need to adjust the viewing width for this dataset. However, several of our columns are characters, not integers.
+
+# mutate <- qfish %>% mutate_at('Licences', as.numeric)
+# mutate2 <- mutate %>% mutate_at('Days', as.numeric)
+# prettyfish <- mutate2 %>% mutate_at('Tonnes', as.numeric)
+
+# prettyfish
+# After these mutations, our dataset should be ready to use.
+  
+```
 
 
